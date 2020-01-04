@@ -92,11 +92,11 @@
       </el-col>
       <el-col :md="24" :lg="12" class="col">
         <areachart-card title="网络流量" 
-          :legend="['netin', 'netout']" 
+          :legend="['netout', 'netin']" 
           :xAxis="chartData.xAxis" 
           :series="[
-            { name: 'netin', data: chartData.netinS },
-            { name: 'netout', data: chartData.netoutS }
+            { name: 'netout', data: chartData.netoutS },
+            { name: 'netin', data: chartData.netinS }
           ]" 
           class="card">
         </areachart-card>
@@ -138,7 +138,7 @@ export default {
 
       for (let item of this.status.rrdata) {
         const time = new Date(item.time * 1000)
-        xAxis.push(`${time.getFullYear()}-${time.getMonth()}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`)
+        xAxis.push(`${time.getFullYear()}-${time.getMonth()+1}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`)
         cpuS.push(+(item.cpu * 100).toFixed(1))
         ioS.push(+(item.iowait * 100).toFixed(1))
         loadS.push(+(item.loadavg).toFixed(2))

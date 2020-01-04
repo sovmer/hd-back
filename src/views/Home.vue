@@ -4,7 +4,7 @@
       <div class="header_left">后台管理</div>
       <div class="header_right">
         <div class="header_right_username">欢迎! {{ username }}</div>
-        <el-button type="primary">注销</el-button>
+        <el-button type="primary" @click="logout">注销</el-button>
       </div>
     </div>
     <div class="main">
@@ -33,9 +33,9 @@
         </el-menu>
       </div>
       <div class="main_item content">
-        <data-center v-if="contentType == 0" :status="status"></data-center>
+        <data-center v-if="contentType == 0" :status="status" :tasks="tasks" :logs="logs"></data-center>
         <node-center v-if="contentType == 1" :status="nodeCenterStatus"></node-center>
-        <node v-if="contentType == 2" :status="nodeStaus"></node>
+        <node v-if="contentType == 2" :status="nodeStaus" :selectNode="selectNode" :selectNodeCenter="selectNodeCenter"></node>
       </div>
     </div>
   </div>
@@ -98,10 +98,18 @@ export default {
       },
       selectNode: '',
       contentType: -1,
-      timeoutList: []
+      timeoutList: [],
+      nodeCenters: [],
+      ports: {},
+      tasks: [],
+      logs: []
     }
   },
   methods: {
+    logout() {
+      this.clearAllTimeout()
+      this.$router.push({ name: 'login' })
+    },
     onDataCenterClick() {
       this.clearAllTimeout()
       this.dataCenterRequest()
@@ -225,6 +233,8 @@ export default {
         resourceUsage.memUsage = (resourceUsage.mem / resourceUsage.maxmem * 100).toFixed(1)
         resourceUsage.diskUsage = (resourceUsage.disk / resourceUsage.maxdisk * 100).toFixed(1)
         this.status.resource = resourceUsage
+
+        this.saveNodesForPorts()
       }
     },
     async getNodeCenterStatusData() {
@@ -250,6 +260,7 @@ export default {
       }
       const data = res.data.data
       this.nodeStaus.status = data
+      this.nodeStaus.status.port = this.ports[this.selectNode] || 5000
     },
     async getNodeRRdata() {
       const res = await axios.get(`/api2/json/nodes/${this.selectNodeCenter}/${this.selectNode}/rrddata?timeframe=hour&cf=AVERAGE`)
@@ -303,13 +314,81 @@ export default {
       }
       tf()
       tf1()
+    },
+    saveNodesForPorts() {
+      const nodeCenters = []
+      for (let item of this.status.nodes) {
+        const nodes = []
+        for (let item1 of item.nodes) {
+          nodes.push({
+            id: item1.id,
+            name: item1.name,
+          })
+        }
+
+        nodeCenters.push({
+          node: item.node,
+          nodes
+        })
+      }
+
+      if (this.nodeCenters.length == nodeCenters.length) {
+        return
+      }
+      this.nodeCenters = nodeCenters
+      localStorage.setItem('nodeCenters', JSON.stringify(nodeCenters))
+    },
+    async getTasksData() {
+      const res = await axios.get(API.CLUSTER_TASKS)
+      if (!res) {
+        return
+      }
+      const data = res.data.data
+      for (let item of data) {
+        item.starttime = this.formatTime(item.starttime)
+        item.endtime = this.formatTime(item.endtime)
+      }
+      this.tasks = data
+    },
+    async getLogsData() {
+      const res = await axios.get(API.CLUSTER_LOG)
+      if (!res) {
+        return
+      }
+      const data = res.data.data
+      for (let item of data) {
+        item.time = this.formatTime(item.time)
+      }
+      this.logs = data
+    },
+    logRequest() {
+      const tf = async () => {
+        await this.getTasksData()
+        await this.getLogsData()
+        // setTimeout(() => { tf() }, 10000)
+      }
+      tf()
+    },
+    formatTime(t) {
+      const time = new Date(t * 1000)
+      return `${time.getFullYear()}-${time.getMonth()+1}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`
     }
   },
   created() {
     this.username = localStorage.getItem(STROGE.USERNAME) || ''
   },
-  mounted() {
+  async mounted() {
+    await axios.post(API.LOGIN, { username: this.username, password: localStorage.getItem('password') })
+
+    let ports = localStorage.getItem('ports')
+    if (ports) {
+      this.ports = JSON.parse(ports)
+    }
     this.dataCenterRequest()
+    this.logRequest()
+  },
+  beforeDestroy() {
+    this.clearAllTimeout()
   }
 }
 </script>

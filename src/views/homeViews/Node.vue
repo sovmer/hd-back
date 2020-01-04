@@ -26,6 +26,8 @@
               <div>引导磁盘大小</div>
               <div>{{ (status.status.maxdisk / 1024 / 1024 / 1024).toFixed(2) }} GiB</div>
             </div>
+            <a :href="`http://nas.snas.xyz:${status.status.port || 5000}`" target="_blank" class="tonode">应用</a>
+            <router-link :to="{ name: 'vnc', query: { selectNode, selectNodeCenter } }" class="tonode">VNC</router-link>
           </div>
         </data-card>
       </el-col>
@@ -52,11 +54,11 @@
       </el-col>
       <el-col :md="24" :lg="12" class="col">
         <areachart-card title="网络流量" 
-          :legend="['netin', 'netout']" 
+          :legend="['netout', 'netin']" 
           :xAxis="chartData.xAxis" 
           :series="[
-            { name: 'netin', data: chartData.netinS },
-            { name: 'netout', data: chartData.netoutS }
+            { name: 'netout', data: chartData.netoutS },
+            { name: 'netin', data: chartData.netinS }
           ]" 
           class="card">
         </areachart-card>
@@ -94,6 +96,12 @@ export default {
           rrdata: []
         }
       }
+    },
+    selectNode: {
+      type: String
+    },
+    selectNodeCenter: {
+      type: String
     }
   },
   computed: {
@@ -109,7 +117,7 @@ export default {
 
       for (let item of this.status.rrdata) {
         const time = new Date(item.time * 1000)
-        xAxis.push(`${time.getFullYear()}-${time.getMonth()}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`)
+        xAxis.push(`${time.getFullYear()}-${time.getMonth()+1}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`)
         cpuS.push(+(item.cpu * 100).toFixed(1))
         memS.push(+(item.mem / 1024 / 1024 / 1024).toFixed(1))
         memTotalS.push(+(item.maxmem / 1024 / 1024 / 1024).toFixed(1))
@@ -132,13 +140,14 @@ export default {
       progressColor: [
         {color: '#C2DDF2', percentage: 50},
         {color: '#FFCC00', percentage: 100},
-      ]
+      ],
     }
-  }
+  },
 }
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/css/_main.scss';
 
 .col {
   margin-bottom: 15px;
@@ -182,5 +191,15 @@ export default {
     width: 95%;
     margin-bottom: 10px;
   }
+}
+
+.tonode {
+  padding: 6px 20px;
+  background: $primary-color;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-top: 20px;
+  margin-right: 20px;
 }
 </style>

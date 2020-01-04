@@ -88,7 +88,7 @@
       </el-col>
       <el-col :md="24" :lg="12" class="col">
         <data-card title="节点" class="card">
-          <el-table :data="status.nodes">
+          <el-table :data="status.nodes" max-height="230">
             <el-table-column
               prop="name"
               label="名称">
@@ -116,6 +116,66 @@
             <el-table-column
               prop="diskUsage"
               label="硬盘使用率%">
+            </el-table-column>
+          </el-table>
+        </data-card>
+      </el-col>
+      <el-col :md="24" :lg="12" class="col">
+        <data-card title="任务" class="card">
+          <el-table :data="tasks" max-height="230">
+            <el-table-column
+              prop="starttime"
+              label="开始时间">
+            </el-table-column>
+            <el-table-column
+              prop="endtime"
+              label="结束时间">
+            </el-table-column>
+            <el-table-column
+              prop="node"
+              label="节点">
+            </el-table-column>
+            <el-table-column
+              prop="user"
+              label="用户名">
+            </el-table-column>
+            <el-table-column
+              prop="type"
+              label="描述">
+            </el-table-column>
+            <el-table-column
+              prop="status"
+              label="状态">
+            </el-table-column>
+          </el-table>
+        </data-card>
+      </el-col>
+      <el-col :md="24" :lg="12" class="col">
+        <data-card title="集群日志" class="card">
+          <el-table :data="logs" max-height="230">
+            <el-table-column
+              prop="time"
+              label="时间">
+            </el-table-column>
+            <el-table-column
+              prop="node"
+              label="节点">
+            </el-table-column>
+            <el-table-column
+              prop="tag"
+              label="服务">
+            </el-table-column>
+            <el-table-column
+              prop="pid"
+              label="PID">
+            </el-table-column>
+            <el-table-column
+              prop="user"
+              label="用户名">
+            </el-table-column>
+            <el-table-column
+              prop="msg"
+              label="消息">
             </el-table-column>
           </el-table>
         </data-card>
@@ -172,6 +232,14 @@ export default {
           nodes: []
         }
       }
+    },
+    tasks: {
+      type: Array,
+      default() { return [] }
+    },
+    logs: {
+      type: Array,
+      default() { return [] }
     }
   },
   computed: {
