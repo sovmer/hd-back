@@ -41,6 +41,9 @@ export default {
     this.selectNode = selectNode
 
     await this.getVNCData()
+  },
+  beforeDestroy() {
+    this.disconect()
   }
 }
 </script>
