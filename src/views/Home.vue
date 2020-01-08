@@ -30,12 +30,19 @@
               </el-menu-item>
             </el-submenu>
           </el-submenu>
+          <el-menu-item index="2" @click.native="onApplicationCenterClick">
+            <template slot="title">
+              <i class="el-icon-menu"></i>
+              <span>应用中心</span>
+            </template>
+          </el-menu-item>
         </el-menu>
       </div>
       <div class="main_item content">
         <data-center v-if="contentType == 0" :status="status" :tasks="tasks" :logs="logs"></data-center>
         <node-center v-if="contentType == 1" :status="nodeCenterStatus"></node-center>
         <node v-if="contentType == 2" :status="nodeStaus" :selectNode="selectNode" :selectNodeCenter="selectNodeCenter"></node>
+        <app-center v-if="contentType == 3"/>
       </div>
     </div>
   </div>
@@ -44,14 +51,15 @@
 <script>
 import axios from '@/utils/axios'
 import { STROGE, API } from '@/constants'
-import { DataCenter, NodeCenter, Node } from './homeViews' 
+import { DataCenter, NodeCenter, Node, AppCenter } from './homeViews' 
 
 export default {
   name: 'Home',
   components: {
     'data-center': DataCenter,
     'node-center': NodeCenter,
-    'node': Node
+    'node': Node,
+    'app-center': AppCenter
   },
   data() {
     return {
@@ -115,23 +123,41 @@ export default {
       this.dataCenterRequest()
     },
     onNodeCenterClick(index, e) {
+      const nodeCenter = this.status.nodes[index].node
+      if (!nodeCenter) {
+        this.$message.info('加载中...请稍后再试')
+        return
+      }
+      this.selectNodeCenter = nodeCenter
       this.clearAllTimeout()
-      this.selectNodeCenter = this.status.nodes[index].node
       this.nodeCenterRequest()
       e.stopPropagation()
     },
     onNodeClick(centerIndex, nodeIndex, e) {
+      const nodeCenter = this.status.nodes[centerIndex].node
+      const node = this.status.nodes[centerIndex].nodes[nodeIndex].id
+      if (!nodeCenter || !node) {
+        this.$message.info('加载中...请稍后再试')
+        return
+      }
+      this.selectNodeCenter = nodeCenter
+      this.selectNode = node
       this.clearAllTimeout()
-      this.selectNodeCenter = this.status.nodes[centerIndex].node
-      this.selectNode = this.status.nodes[centerIndex].nodes[nodeIndex].id
       this.nodeRequest()
       e.stopPropagation()
     },
+    onApplicationCenterClick() {
+      this.contentType = 3
+      this.clearAllTimeout()
+    },
     clearAllTimeout() {
-      for (let item of this.timeoutList) {
-        clearTimeout(item)
-      }
-      this.timeoutList = []
+      return new Promise((resolve) => {
+        for (let item of this.timeoutList) {
+          clearInterval(item)
+        }
+        this.timeoutList = []
+        resolve()
+      })
     },
     async getStatusData() {
       const res = await axios.get(API.CLUSTER_STATUS)
@@ -272,48 +298,40 @@ export default {
     },
     dataCenterRequest() {
       this.contentType = 0
-      const tf = async () => {
+      this.getStatusData()
+      this.getResourcesData()
+      this.getTasksData()
+      this.getLogsData()
+      this.timeoutList.push(setInterval(async () => {
         await this.getStatusData()
         await this.getResourcesData()
-        if (this.contentType == 0) {
-          this.timeoutList.push(setTimeout(() => { tf() }, 5000))
-        }
-      }
-      tf()
+      }, 5000))
+      this.timeoutList.push(setInterval(async () => {
+        await this.getTasksData()
+        await this.getLogsData()
+      }, 60000))
     },
     nodeCenterRequest() {
       this.contentType = 1
-      const tf = async () => {
+      this.getNodeCenterStatusData()
+      this.getNodeCenterRRdata()
+      this.timeoutList.push(setInterval(async () => {
         await this.getNodeCenterStatusData()
-        if (this.contentType == 1) {
-          this.timeoutList.push(setTimeout(() => { tf() }, 5000))
-        }
-      }
-      const tf1 = async () => {
+      }, 5000))
+      this.timeoutList.push(setInterval(async () => {
         await this.getNodeCenterRRdata()
-        if (this.contentType == 1) {
-          this.timeoutList.push(setTimeout(() => { tf1() }, 10000))
-        }
-      }
-      tf()
-      tf1()
+      }, 5000))
     },
     nodeRequest() {
       this.contentType = 2
-      const tf = async () => {
+      this.getNodeStatusData()
+      this.getNodeRRdata()
+      this.timeoutList.push(setInterval(async () => {
         await this.getNodeStatusData()
-        if (this.contentType == 2) {
-          this.timeoutList.push(setTimeout(() => { tf() }, 5000))
-        }
-      }
-      const tf1 = async () => {
+      }, 5000))
+      this.timeoutList.push(setInterval(async () => {
         await this.getNodeRRdata()
-        if (this.contentType == 2) {
-          this.timeoutList.push(setTimeout(() => { tf1() }, 10000))
-        }
-      }
-      tf()
-      tf1()
+      }, 5000))
     },
     saveNodesForPorts() {
       const nodeCenters = []
@@ -361,14 +379,6 @@ export default {
       }
       this.logs = data
     },
-    logRequest() {
-      const tf = async () => {
-        await this.getTasksData()
-        await this.getLogsData()
-        // setTimeout(() => { tf() }, 10000)
-      }
-      tf()
-    },
     formatTime(t) {
       const time = new Date(t * 1000)
       return `${time.getFullYear()}-${time.getMonth()+1}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`
@@ -378,18 +388,20 @@ export default {
     this.username = localStorage.getItem(STROGE.USERNAME) || ''
   },
   async mounted() {
-    await axios.post(API.LOGIN, { username: this.username, password: localStorage.getItem('password') })
+    const res = await axios.post(API.LOGIN, { username: this.username, password: localStorage.getItem('password') })
+    if (!res) {
+      return
+    }
 
     let ports = localStorage.getItem('ports')
     if (ports) {
       this.ports = JSON.parse(ports)
     }
     this.dataCenterRequest()
-    this.logRequest()
   },
   beforeDestroy() {
     this.clearAllTimeout()
-  }
+  },
 }
 </script>
 

@@ -166,6 +166,8 @@ export default {
   font-size: 14px;
   display: flex;
   flex-wrap: wrap;
+  overflow: auto;
+  height: 250px;
 
   &_item0 {
     width: 50%;
