@@ -196,7 +196,9 @@ export default {
 }
 
 .tonode {
-  padding: 6px 20px;
+  padding: 0 20px;
+  height: 40px;
+  line-height: 40px;
   background: $primary-color;
   color: #ffffff;
   text-decoration: none;

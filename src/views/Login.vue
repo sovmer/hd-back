@@ -41,7 +41,7 @@ export default {
         const time = now.getTime();
         const expireTime = time + 1000*3600000;
         now.setTime(expireTime);
-        document.cookie = `PVEAuthCookie=${data.ticket};expires=${now.toUTCString()};path=/`;
+        document.cookie = `PVEAuthCookie=${data.ticket}`;
         localStorage.setItem('password', data.ticket)
         localStorage.setItem(STROGE.USERNAME, data.username)
         this.$router.replace({ name: 'home' })

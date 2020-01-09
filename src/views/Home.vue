@@ -390,6 +390,8 @@ export default {
   async mounted() {
     const res = await axios.post(API.LOGIN, { username: this.username, password: localStorage.getItem('password') })
     if (!res) {
+      const data = res.data.data
+      document.cookie = `PVEAuthCookie=${data.ticket}`;
       return
     }
 
